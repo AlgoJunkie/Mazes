@@ -54,7 +54,7 @@ def visualize(height, width, generator_algorithm, solver_algorithm, heuristic):
     pygame.display.set_caption('Maze Solver')
     window_height = max(200, height * CELL + 50)
     window_width = max(200, width * CELL + 50)
-    screen = pygame.display.set_mode((window_width, window_height), 0, 32)
+    screen = pygame.display.set_mode((window_width, window_height))
 
     # If cell is open, mark it as white, else mark walls as black
     for x in xrange(height):
