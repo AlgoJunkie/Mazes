@@ -1,13 +1,9 @@
 #!/usr/bin/env python
 """This script contains solvers and heuristics for solving a maze."""
 
-import pygame
 from math import sqrt
 from Queue import PriorityQueue
-
-LAWN = (124, 252, 0)
-GREEN = (0, 255, 0)
-LIME = (50, 205, 50)
+from settings import LAWN, LIME, GREEN, paint
 
 
 def manhattan(x1, y1, x2, y2):
@@ -37,6 +33,7 @@ def a_star(screen, maze, heuristic):
     height = len(maze)
     width = len(maze[0])
 
+    # Grab coordinates of start and endpoints of the path
     for x in xrange(height):
         for y in xrange(width):
             if maze[x][y] == 'S':
@@ -46,6 +43,8 @@ def a_star(screen, maze, heuristic):
 
     q.put((heuristic(sx, sy, fx, fy), sx, sy))
 
+    # On each iteration, retrieve object with the lowest value
+    # While endpoint hasn't been reached, add all visitable neighbors to pq
     while True:
 
         _, x, y = q.get()
@@ -57,10 +56,8 @@ def a_star(screen, maze, heuristic):
                     if maze[xn][yn] == 'F':
                         return
                     if maze[xn][yn] != 'S':
-                        screen.fill(
-                            GREEN, pygame.Rect(xn * 10, yn * 10, 10, 10))
-                        pygame.display.update(
-                            pygame.Rect(xn * 10, yn * 10, 10, 10))
+                        maze[xn][yn] = 'S'
+                        paint(screen, xn, yn, GREEN)
                         visited.add((xn, yn))
                         q.put((heuristic(xn, yn, fx, fy), xn, yn))
 
@@ -74,6 +71,7 @@ def bidirectional_a_star(screen, maze, heuristic):
     height = len(maze)
     width = len(maze[0])
 
+    # Grab start and end coordinates of path
     for x in xrange(height):
         for y in xrange(width):
             if maze[x][y] == 'S':
@@ -84,6 +82,8 @@ def bidirectional_a_star(screen, maze, heuristic):
     q.put((heuristic(sx, sy, fx, fy), sx, sy))
     p.put((heuristic(sx, sy, fx, fy), fx, fy))
 
+    # Same as a*, but begin path from both directions
+    # Terminate when paths intersect
     while True:
         _, x1, y1 = q.get()
         _, x2, y2 = p.get()
@@ -98,10 +98,7 @@ def bidirectional_a_star(screen, maze, heuristic):
                         return
                     if maze[xn][yn] != 'S':
                         maze[xn][yn] = 'S'
-                        screen.fill(
-                            LAWN, pygame.Rect(xn * 10, yn * 10, 10, 10))
-                        pygame.display.update(
-                            pygame.Rect(xn * 10, yn * 10, 10, 10))
+                        paint(screen, xn, yn, LAWN)
                         visited1.add((xn, yn))
                         q.put((heuristic(xn, yn, fx, fy), xn, yn))
 
@@ -112,9 +109,6 @@ def bidirectional_a_star(screen, maze, heuristic):
                         return
                     if maze[xn][yn] != 'F':
                         maze[xn][yn] = 'F'
-                        screen.fill(
-                            LIME, pygame.Rect(xn * 10, yn * 10, 10, 10))
-                        pygame.display.update(
-                            pygame.Rect(xn * 10, yn * 10, 10, 10))
+                        paint(screen, xn, yn, LIME)
                         visited2.add((xn, yn))
                         p.put((heuristic(xn, yn, fx, fy), xn, yn))

@@ -1,14 +1,8 @@
 #!/usr/bin/env python
 """This script contains maze generating algorithms."""
 
-from random import shuffle, random
-import pygame
-from pygame.locals import *
-
-BLACK = (0, 0, 0)
-BLUE = (0, 0, 255)
-WHITE = (255, 255, 255)
-RED = (255, 0, 0)
+from random import shuffle, random, sample
+from settings import WHITE, paint
 
 
 def binary_tree(screen, maze):
@@ -26,13 +20,11 @@ def binary_tree(screen, maze):
             elif x - 1 == 0 or y - 1 == 0:
                 a, b = [(x - 1, y), (x, y - 1)][x - 1 == 0]
                 maze[a][b] = ' '
-                screen.fill(WHITE, pygame.Rect(a * 10, b * 10, 10, 10))
-                pygame.display.update(pygame.Rect(a * 10, b * 10, 10, 10))
+                paint(screen, a, b, WHITE)
             else:
                 a, b = [(x - 1, y), (x, y - 1)][random() > 0.5]
                 maze[a][b] = ' '
-                screen.fill(WHITE, pygame.Rect(a * 10, b * 10, 10, 10))
-                pygame.display.update(pygame.Rect(a * 10, b * 10, 10, 10))
+                paint(screen, a, b, WHITE)
 
 
 def depth_first_search(screen, maze):
@@ -70,8 +62,7 @@ def depth_first_search(screen, maze):
                 maze[xw][yw] = ' '
 
                 # Set removed walls to white
-                screen.fill(WHITE, pygame.Rect(xw * 10, yw * 10, 10, 10))
-                pygame.display.update(pygame.Rect(xw * 10, yw * 10, 10, 10))
+                paint(screen, xw, yw, WHITE)
 
                 stack.append((xn, yn))
                 unvisited.remove((xn, yn))
@@ -84,14 +75,13 @@ def depth_first_search(screen, maze):
 def random_kruskal(screen, maze):
     """Create a list of walls that divide cells, and a set of every cell
     For every wall (in random order)
-    If cells divided by wall are not in the same set, remove wall, join sets
-    """
+    If cells divided by wall are not in the same set, remove wall, join sets"""
 
-    class UnionFind:
+    class UnionFind(object):
 
         """Use UnionFind data structure for union and find operations of cells
         Use tuple to keep track of set for each cell
-        Use size to add smaller trees into larger trees (flattening)"""
+        Use size to add smaller trees into larger trees (flattening)."""
 
         def __init__(self, height, width):
             self.id = [[0] * (width) for _ in xrange(height)]
@@ -146,12 +136,100 @@ def random_kruskal(screen, maze):
             if not uf.root(x, y - 1) == uf.root(x, y + 1):
                 uf.union(x, y - 1, x, y + 1)
                 maze[x][y] = ' '
-                screen.fill(WHITE, pygame.Rect(x * 10, y * 10, 10, 10))
-                pygame.display.update(pygame.Rect(x * 10, y * 10, 10, 10))
+                paint(screen, x, y, WHITE)
         if maze[x][y] == '-':
             if not uf.root(x - 1, y) == uf.root(x + 1, y):
                 uf.union(x - 1, y, x + 1, y)
                 maze[x][y] = ' '
-                screen.fill(WHITE, pygame.Rect(x * 10, y * 10, 10, 10))
-                pygame.display.update(pygame.Rect(x * 10, y * 10, 10, 10))
+                paint(screen, x, y, WHITE)
+    return maze
+
+
+def hunt_and_kill(screen, maze):
+    '''Perform a random walk, open walls to neighbors.
+    If all neighbors are visited, find first unvisited cell adjacent to a
+    visited cell. Add this cell to the walk and repeat.'''
+
+    height = len(maze)
+    width = len(maze[0])
+
+    visited = set((1, 1))
+    cells = [maze[x][y] for y in xrange(height) for x in xrange(height)]
+    filled = cells.count(' ')
+    x, y = 1, 1
+
+    neighbors = lambda x, y: [
+        (x - 2, y, x - 1, y),
+        (x + 2, y, x + 1, y),
+        (x, y - 2, x, y - 1),
+        (x, y + 2, x, y + 1)]
+
+    def kill(screen, maze, visited):
+        '''Find, open unvisited cell adjacent to visited cell.'''
+        for h in xrange(1, height, 2):
+            for w in xrange(1, width, 2):
+                if (h, w) not in visited:
+                    for xn, yn, xw, yw in neighbors(h, w):
+                        if (xn, yn) in visited:
+                            maze[xw][yw] = ' '
+                            paint(screen, xw, yw, WHITE)
+                            visited.add((h, w))
+                            return h, w
+
+    while len(visited) <= filled:
+
+        hunt = True
+        n = neighbors(x, y)
+        shuffle(n)
+
+        for xn, yn, xw, yw in n:
+            if 0 <= xn < height and 0 <= yn < width:
+                if (xn, yn) not in visited:
+                    hunt = False
+                    maze[xw][yw] = ' '
+                    paint(screen, xw, yw, WHITE)
+                    x, y = xn, yn
+                    visited.add((xn, yn))
+                    break
+
+        if hunt:
+            x, y = kill(screen, maze, visited)
+
+    return maze
+
+
+def random_prim(screen, maze):
+    '''Choose a random wall that connects an unvisited cell to a visited cell.
+    Terminate when all cells are connected to each other.'''
+
+    height = len(maze)
+    width = len(maze[0])
+    frontier = set()  # <- Neighbors/walls of all nodes in the graph
+    f = set()  # <- Dict with all x,y tuples in frontier
+    graph = set((1, 1))  # <- All nodes in the graph
+
+    neighbors = lambda x, y: [
+        (x - 2, y, x - 1, y),
+        (x + 2, y, x + 1, y),
+        (x, y - 2, x, y - 1),
+        (x, y + 2, x, y + 1)]
+
+    for xn, yn, xw, yw in neighbors(1, 1):
+        if 0 <= xn < height and 0 <= yn < width:
+            frontier.add((xn, yn, xw, yw))
+            f.add((xn, yn))
+
+    while frontier:
+        x, y, xw, yw = sample(frontier, 1)[0]
+        frontier.remove((x, y, xw, yw))
+        f.remove((x, y))
+        maze[xw][yw] = ' '
+        paint(screen, xw, yw, WHITE)
+        graph.add((x, y))
+
+        for x2, y2, xw2, yw2 in neighbors(x, y):
+            if 0 <= x2 < height and 0 <= y2 < width:
+                if (x2, y2) not in graph and (x2, y2) not in f:
+                    frontier.add((x2, y2, xw2, yw2))
+                    f.add((x2, y2))
     return maze
