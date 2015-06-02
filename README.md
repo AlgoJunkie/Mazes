@@ -12,25 +12,25 @@ from maze import *
 visualize(25, 25, depth_first_search, a_star, manhattan)
 ```
 
-![demo](/dfs.gif)
+![demo](/gifs/dfs.gif)
 ============================================================
 
 **Random Kruskal:**
 
-![demo](/kruskal.gif)
+![demo](/gifs/kruskal.gif)
 
 **Random Prim:**
 
-![demo](/prim.gif)
+![demo](/gifs/prim.gif)
 
 **Hunt and Kill:**
 
-![demo](/hunt.gif)
+![demo](/gifs/hunt.gif)
 
 **Binary Tree:**
 
-![demo](/tree.gif)
+![demo](/gifs/tree.gif)
 
 **Bidirectional A*:**
 
-![demo](/ba.gif)
+![demo](/gifs/ba.gif)
